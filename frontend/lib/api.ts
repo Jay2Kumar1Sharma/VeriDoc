@@ -3,6 +3,8 @@ import type {
   HealthResponse,
   IngestJob,
   QueryResponse,
+  SessionMessage,
+  SessionSummary,
   TraceResponse,
 } from "@/lib/types"
 
@@ -46,6 +48,16 @@ export async function getTrace(traceId: string): Promise<TraceResponse> {
 
 export async function listTraces(): Promise<{ traces: TraceResponse[] }> {
   return request<{ traces: TraceResponse[] }>("/traces?limit=50&offset=0")
+}
+
+export async function listSessions(): Promise<{ sessions: SessionSummary[] }> {
+  return request<{ sessions: SessionSummary[] }>("/sessions")
+}
+
+export async function listSessionMessages(
+  sessionId: string,
+): Promise<{ messages: SessionMessage[] }> {
+  return request<{ messages: SessionMessage[] }>(`/sessions/${sessionId}/messages`)
 }
 
 export async function listDocuments(): Promise<{ documents: DocumentSummary[] }> {
@@ -92,4 +104,3 @@ export async function sendFeedback(
 }
 
 export { API_BASE }
-

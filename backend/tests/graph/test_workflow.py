@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.core.config import Settings
 from app.graph.builder import build_graph
 from app.graph.nodes.fallback import FALLBACK_ANSWER
+from app.graph.nodes.web_search import WebSearchResult
 from app.graph.state import initial_state
 from app.llm.clients import ChatMessage
 from app.llm.prompts import GradingOutput, GroundednessOutput, QueryAnalysisOutput, RewriteOutput
@@ -23,6 +24,7 @@ class FakeLLMClient:
         self.grounded = grounded or [True]
         self.grounded_calls = 0
         self.rewrite_calls = 0
+        self.last_relevant_chunk_id = "doc_1"
 
     async def complete(
         self,
@@ -43,6 +45,9 @@ class FakeLLMClient:
                 chunk_id in user_content and is_relevant
                 for chunk_id, is_relevant in self.relevant_by_doc.items()
             )
+            for chunk_id, is_relevant in self.relevant_by_doc.items():
+                if chunk_id in user_content and is_relevant:
+                    self.last_relevant_chunk_id = chunk_id
             return GradingOutput(relevant=relevant, reasoning="matched" if relevant else "no match")
         if response_model is RewriteOutput:
             self.rewrite_calls += 1
@@ -58,7 +63,7 @@ class FakeLLMClient:
                 grounded=grounded,
                 unsupported_claims=[] if grounded else ["unsupported detail"],
             )
-        return "Use FastAPI path parameters with braces. [#doc_1]"
+        return f"Use FastAPI path parameters with braces. [#{self.last_relevant_chunk_id}]"
 
 
 class FakeVectorStore:
@@ -85,6 +90,17 @@ class FakeVectorStore:
 
     def count(self) -> int:
         return sum(len(batch) for batch in self._batches)
+
+
+class FakeWebSearchClient:
+    def __init__(self, results: list[WebSearchResult]) -> None:
+        self.results = results
+        self.calls = 0
+
+    async def search(self, query: str, max_results: int) -> list[WebSearchResult]:
+        del query, max_results
+        self.calls += 1
+        return self.results
 
 
 def doc(chunk_id: str, content: str = "Path params use braces.") -> RetrievedDoc:
@@ -226,3 +242,36 @@ async def test_citations_reference_real_relevant_docs() -> None:
     citation_ids = {citation.chunk_id for citation in result["citations"]}
 
     assert citation_ids <= relevant_ids
+
+
+@pytest.mark.asyncio
+async def test_web_search_fallback_runs_after_retries() -> None:
+    web_client = FakeWebSearchClient(
+        [
+            WebSearchResult(
+                title="FastAPI dependency docs",
+                url="https://example.test/deps",
+                content="FastAPI dependencies can share reusable logic.",
+                score=0.8,
+            )
+        ]
+    )
+    graph = build_graph(
+        llm_client=FakeLLMClient(relevant_by_doc={"web_https-example-test-deps_0000": True}),
+        vector_store=FakeVectorStore([[doc("doc_0")]]),
+        web_search_client=web_client,
+        settings=settings(max_retries=0),
+    )
+
+    result = await graph.ainvoke(
+        initial_state(
+            "How do dependencies work?",
+            max_retries=0,
+            web_search_enabled=True,
+        ),
+        config={"configurable": {"thread_id": "web-search"}},
+    )
+
+    assert web_client.calls == 1
+    assert result["citations"][0].source.startswith("web:")
+    assert "web_search" in [entry["node"] for entry in result["trace"]]

@@ -187,3 +187,21 @@ async def test_sse_query_shape(client: AsyncClient) -> None:
     assert "data:" in response.text
     assert json.loads(response.text.strip().split("data: ")[-1])["done"] is True
 
+
+@pytest.mark.asyncio
+async def test_query_with_session_persists_memory(client: AsyncClient) -> None:
+    response = await client.post(
+        "/query",
+        json={"question": "How do path params work?", "session_id": "session-1"},
+    )
+
+    assert response.status_code == 200
+
+    sessions_response = await client.get("/sessions")
+    assert sessions_response.status_code == 200
+    assert sessions_response.json()["sessions"][0]["session_id"] == "session-1"
+
+    messages_response = await client.get("/sessions/session-1/messages")
+    assert messages_response.status_code == 200
+    roles = [message["role"] for message in messages_response.json()["messages"]]
+    assert roles == ["user", "assistant"]

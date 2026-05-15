@@ -50,6 +50,8 @@ class Settings(BaseSettings):
         default=False,
         alias="ENABLE_WEB_SEARCH_FALLBACK",
     )
+    web_search_max_results: int = Field(default=5, alias="WEB_SEARCH_MAX_RESULTS")
+    session_context_messages: int = Field(default=6, alias="SESSION_CONTEXT_MESSAGES")
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000"],
         alias="CORS_ORIGINS",

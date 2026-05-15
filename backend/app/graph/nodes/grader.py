@@ -30,6 +30,8 @@ async def grader_node(
     route_decision = "generate" if relevant_docs else "rewrite"
     if not relevant_docs and state["retry_count"] >= state["max_retries"]:
         route_decision = "fallback"
+        if state["web_search_enabled"] and not state["web_search_attempted"]:
+            route_decision = "web_search"
     return {
         "relevant_docs": relevant_docs,
         "grading_results": grading_results,
@@ -66,4 +68,3 @@ async def _grade_doc(
         response_model=GradingOutput,
     )
     return output
-

@@ -350,6 +350,18 @@ class MetadataStore:
             await cursor.close()
         return [_session_record_from_row(row) for row in rows]
 
+    async def get_session(self, session_id: str) -> SessionRecord | None:
+        async with self.connect() as db:
+            cursor = await db.execute(
+                "SELECT session_id, created_at FROM sessions WHERE session_id = ?",
+                (session_id,),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+        if row is None:
+            return None
+        return _session_record_from_row(row)
+
     async def add_session_message(
         self,
         session_id: str,

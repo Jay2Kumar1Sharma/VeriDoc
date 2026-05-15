@@ -33,6 +33,20 @@ export type TraceResponse = {
   trace_steps: TraceStep[]
 }
 
+export type SessionSummary = {
+  session_id: string
+  created_at: string
+  preview: string
+}
+
+export type SessionMessage = {
+  id: number
+  session_id: string
+  role: "user" | "assistant"
+  content: string
+  created_at: string
+}
+
 export type DocumentSummary = {
   doc_id: string
   source: string
@@ -74,4 +88,3 @@ export type ChatMessage = {
   response?: QueryResponse
   trace?: TraceResponse | null
 }
-

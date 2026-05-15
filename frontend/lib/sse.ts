@@ -2,6 +2,7 @@ import type { QueryResponse } from "@/lib/types"
 
 export async function streamQuestion(
   question: string,
+  sessionId: string | null,
   onToken: (token: string) => void,
 ): Promise<QueryResponse | null> {
   const response = await fetch(
@@ -12,7 +13,7 @@ export async function streamQuestion(
         "Content-Type": "application/json",
         Accept: "text/event-stream",
       },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, session_id: sessionId }),
     },
   )
 

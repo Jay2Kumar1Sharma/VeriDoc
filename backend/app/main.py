@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import documents, feedback, health, ingest, query, traces
+from app.api import documents, feedback, health, ingest, query, sessions, traces
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger, trace_id_var
 from app.stores.metadata_store import MetadataStore
@@ -109,6 +109,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router)
     app.include_router(feedback.router)
     app.include_router(traces.router)
+    app.include_router(sessions.router)
 
     return app
 

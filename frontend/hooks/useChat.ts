@@ -1,15 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { toast } from "sonner"
 
 import { getTrace } from "@/lib/api"
 import { streamQuestion } from "@/lib/sse"
 import type { ChatMessage } from "@/lib/types"
 
-export function useChat() {
+export function useChat(sessionId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  const loadHistory = useCallback((history: ChatMessage[]) => {
+    setMessages(history)
+  }, [])
+
+  const clear = useCallback(() => {
+    setMessages([])
+  }, [])
 
   const send = async (question: string) => {
     const userMessage: ChatMessage = {
@@ -26,7 +34,7 @@ export function useChat() {
     setIsLoading(true)
 
     try {
-      const response = await streamQuestion(question, (token) => {
+      const response = await streamQuestion(question, sessionId, (token) => {
         setMessages((current) =>
           current.map((message) =>
             message.id === assistantId
@@ -52,5 +60,5 @@ export function useChat() {
     }
   }
 
-  return { messages, send, isLoading }
+  return { messages, send, isLoading, loadHistory, clear }
 }

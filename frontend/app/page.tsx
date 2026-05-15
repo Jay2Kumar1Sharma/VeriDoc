@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, MessageSquarePlus } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { AnswerRenderer } from "@/components/AnswerRenderer"
@@ -11,11 +11,16 @@ import { EmptyState } from "@/components/EmptyState"
 import { FeedbackButtons } from "@/components/FeedbackButtons"
 import { TraceTimeline } from "@/components/TraceTimeline"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useChat } from "@/hooks/useChat"
-import type { Citation } from "@/lib/types"
+import { useSessionMessages, useSessions } from "@/hooks/useSessions"
+import type { ChatMessage, Citation } from "@/lib/types"
 
 export default function Home() {
-  const { messages, send, isLoading } = useChat()
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
+  const { messages, send, isLoading, loadHistory, clear } = useChat(sessionId)
+  const sessions = useSessions()
+  const history = useSessionMessages(sessionId)
   const [input, setInput] = useState("")
   const [citation, setCitation] = useState<Citation | null>(null)
 
@@ -30,6 +35,21 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
 
+  useEffect(() => {
+    if (!history.data) return
+    const loaded: ChatMessage[] = history.data.messages.map((message) => ({
+      id: String(message.id),
+      role: message.role,
+      content: message.content,
+    }))
+    loadHistory(loaded)
+  }, [history.data, loadHistory])
+
+  const newChat = () => {
+    setSessionId(crypto.randomUUID())
+    clear()
+  }
+
   const submit = (value = input) => {
     if (!value.trim()) return
     setInput("")
@@ -37,9 +57,30 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col px-4 py-6">
-      {!messages.length ? <EmptyState onExample={submit} /> : null}
-      <div className="flex-1 space-y-6 pb-28">
+    <div className="mx-auto grid min-h-[calc(100vh-7rem)] max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[260px_1fr]">
+      <aside className="hidden border-r pr-4 lg:block">
+        <Button className="mb-4 w-full justify-start" variant="outline" onClick={newChat}>
+          <MessageSquarePlus className="mr-2 size-4" />
+          New chat
+        </Button>
+        <div className="space-y-2">
+          {(sessions.data?.sessions ?? []).map((session) => (
+            <button
+              key={session.session_id}
+              type="button"
+              onClick={() => setSessionId(session.session_id)}
+              className={`w-full rounded-md px-3 py-2 text-left text-sm transition hover:bg-muted ${
+                session.session_id === sessionId ? "bg-muted text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              <span className="line-clamp-2">{session.preview}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
+      <section className="flex min-w-0 flex-col">
+        {!messages.length ? <EmptyState onExample={submit} /> : null}
+        <div className="flex-1 space-y-6 pb-28">
         {messages.map((message) => (
           <motion.article
             key={message.id}
@@ -96,7 +137,8 @@ export default function Home() {
             </div>
           </motion.article>
         ))}
-      </div>
+        </div>
+      </section>
       <div className="fixed inset-x-0 bottom-0 border-t bg-background/90 p-4 backdrop-blur">
         <div className="mx-auto max-w-3xl">
           <ChatInput value={input} onChange={setInput} onSubmit={() => submit()} disabled={isLoading} />

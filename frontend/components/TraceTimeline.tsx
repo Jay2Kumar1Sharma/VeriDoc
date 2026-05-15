@@ -5,6 +5,7 @@ import {
   Brain,
   CheckCircle2,
   FileQuestion,
+  Globe2,
   PenLine,
   Search,
   ShieldCheck,
@@ -21,6 +22,7 @@ const icons = {
   rewriter: PenLine,
   generator: Sparkles,
   hallucination_check: ShieldCheck,
+  web_search: Globe2,
   fallback: FileQuestion,
 }
 
@@ -53,4 +55,3 @@ export function TraceTimeline({ steps }: { steps: TraceStep[] }) {
 function label(node: string) {
   return node.replaceAll("_", " ")
 }
-

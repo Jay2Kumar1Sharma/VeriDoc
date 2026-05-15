@@ -87,6 +87,28 @@ class TracesResponse(BaseModel):
     offset: int
 
 
+class SessionSummary(BaseModel):
+    session_id: str
+    created_at: str
+    preview: str
+
+
+class SessionMessage(BaseModel):
+    id: int
+    session_id: str
+    role: str
+    content: str
+    created_at: str
+
+
+class SessionsResponse(BaseModel):
+    sessions: list[SessionSummary]
+
+
+class SessionMessagesResponse(BaseModel):
+    messages: list[SessionMessage]
+
+
 class HealthResponse(BaseModel):
     status: str
     version: str
@@ -94,4 +116,3 @@ class HealthResponse(BaseModel):
     vector_store_chunks: int
     llm_provider: str
     embedding_provider: str
-

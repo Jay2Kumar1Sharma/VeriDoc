@@ -83,3 +83,35 @@ Add a Gemini provider using the official `google-genai` SDK and make `LLM_PROVID
 **Consequences**
 
 This adds a third LLM provider while keeping the provider interface stable. The Google SDK requires `httpx>=0.28.1`, so the backend `httpx` pin was widened from the original `<0.28` constraint.
+
+### ADR-005: Web search only after corpus retries are exhausted
+
+**Status:** Accepted
+
+**Context**
+
+The system should remain documentation-first. Web search is useful when the local corpus cannot answer, but using it too early would weaken the demo's core claim that answers are grounded in indexed docs.
+
+**Decision**
+
+Run Tavily web search only when `ENABLE_WEB_SEARCH_FALLBACK=true`, all rewrite retries are exhausted, and no relevant corpus chunks remain. Web results are converted into the same `RetrievedDoc` shape and pass through the existing grader and generator.
+
+**Consequences**
+
+The fallback reuses the normal trace, grading, citation, and groundedness machinery. Web answers are visibly marked by `web:` citation sources. If Tavily is enabled without an API key, the trace records that condition and the graph falls back honestly.
+
+### ADR-006: SQLite-backed session memory with prompt context
+
+**Status:** Accepted
+
+**Context**
+
+LangGraph's in-memory checkpointer is useful during a process lifetime, but reviewers need chat history to survive server restarts. The project already has SQLite for traces and feedback.
+
+**Decision**
+
+Persist user and assistant turns in the existing `session_messages` table. On a session-scoped query, load the latest configurable number of messages and prepend them as a conversation context block to query analysis.
+
+**Consequences**
+
+This keeps memory local-first and easy to inspect. It deliberately limits memory to query rewriting and classification rather than stuffing the entire conversation into generation, which reduces prompt drift while still resolving follow-up questions.

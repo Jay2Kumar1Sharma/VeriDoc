@@ -6,7 +6,8 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
-from app.api.deps import GraphRunner, get_graph, get_metadata_store
+from app.api.deps import GraphRunner, get_graph, get_metadata_store, get_settings_dep
+from app.core.config import Settings
 from app.core.logging import trace_id_var
 from app.graph.state import initial_state
 from app.schemas.api import QueryRequest, QueryResponse
@@ -22,21 +23,23 @@ async def query(
     request: Request,
     graph: Annotated[GraphRunner, Depends(get_graph)],
     metadata_store: Annotated[MetadataStore, Depends(get_metadata_store)],
+    settings: Annotated[Settings, Depends(get_settings_dep)],
 ) -> QueryResponse | StreamingResponse:
     if "text/event-stream" in request.headers.get("accept", ""):
         return StreamingResponse(
-            _query_sse(payload, graph, metadata_store),
+            _query_sse(payload, graph, metadata_store, settings),
             media_type="text/event-stream",
         )
-    return await _run_query(payload, graph, metadata_store)
+    return await _run_query(payload, graph, metadata_store, settings)
 
 
 async def _query_sse(
     payload: QueryRequest,
     graph: GraphRunner,
     metadata_store: MetadataStore,
+    settings: Settings,
 ):
-    response = await _run_query(payload, graph, metadata_store)
+    response = await _run_query(payload, graph, metadata_store, settings)
     trace = await metadata_store.get_query_trace(response.trace_id)
     trace_steps: list[dict[str, object]] = []
     if trace is not None:
@@ -53,14 +56,22 @@ async def _run_query(
     payload: QueryRequest,
     graph: GraphRunner,
     metadata_store: MetadataStore,
+    settings: Settings,
 ) -> QueryResponse:
     trace_id = trace_id_var.get() or str(uuid4())
+    conversation_context = await _conversation_context(
+        metadata_store,
+        payload.session_id,
+        settings.session_context_messages,
+    )
     start = perf_counter()
     result = await graph.ainvoke(
         initial_state(
             question=payload.question,
             session_id=payload.session_id,
             max_retries=payload.max_retries,
+            conversation_context=conversation_context,
+            web_search_enabled=settings.enable_web_search_fallback,
         ),
         config={"configurable": {"thread_id": payload.session_id or trace_id}},
     )
@@ -86,7 +97,22 @@ async def _run_query(
         latency_ms=latency_ms,
         payload_json=json.dumps(_jsonable_result(result)),
     )
+    if payload.session_id is not None:
+        await metadata_store.add_session_message(payload.session_id, "user", payload.question)
+        await metadata_store.add_session_message(payload.session_id, "assistant", response.answer)
     return response
+
+
+async def _conversation_context(
+    metadata_store: MetadataStore,
+    session_id: str | None,
+    limit: int,
+) -> str:
+    if session_id is None:
+        return ""
+    messages = await metadata_store.list_session_messages(session_id)
+    selected = messages[-limit:] if limit > 0 else []
+    return "\n".join(f"{message.role}: {message.content}" for message in selected)
 
 
 def _citation_from_any(value: object) -> Citation:

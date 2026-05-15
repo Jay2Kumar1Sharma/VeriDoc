@@ -11,10 +11,17 @@ async def query_analysis_node(
     settings: Settings,
 ) -> dict[str, object]:
     timer = NodeTimer()
+    user_prompt = state["original_query"]
+    if state["conversation_context"]:
+        user_prompt = (
+            "Conversation context:\n"
+            f"{state['conversation_context']}\n\n"
+            f"Current question:\n{state['original_query']}"
+        )
     output = await llm_client.complete(
         messages=[
             ChatMessage(role="system", content=QUERY_ANALYSIS_PROMPT_V1),
-            ChatMessage(role="user", content=state["original_query"]),
+            ChatMessage(role="user", content=user_prompt),
         ],
         model=settings.grading_model,
         response_model=QueryAnalysisOutput,
@@ -30,4 +37,3 @@ async def query_analysis_node(
             )
         ],
     }
-
