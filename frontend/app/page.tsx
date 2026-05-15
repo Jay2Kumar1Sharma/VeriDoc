@@ -1,101 +1,108 @@
-import Image from "next/image";
+"use client"
+
+import { motion } from "framer-motion"
+import { AlertTriangle } from "lucide-react"
+import { useEffect, useState } from "react"
+
+import { AnswerRenderer } from "@/components/AnswerRenderer"
+import { ChatInput } from "@/components/ChatInput"
+import { CitationDrawer } from "@/components/CitationDrawer"
+import { EmptyState } from "@/components/EmptyState"
+import { FeedbackButtons } from "@/components/FeedbackButtons"
+import { TraceTimeline } from "@/components/TraceTimeline"
+import { Badge } from "@/components/ui/badge"
+import { useChat } from "@/hooks/useChat"
+import type { Citation } from "@/lib/types"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { messages, send, isLoading } = useChat()
+  const [input, setInput] = useState("")
+  const [citation, setCitation] = useState<Citation | null>(null)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "/" && document.activeElement?.tagName !== "TEXTAREA") {
+        event.preventDefault()
+        document.querySelector<HTMLTextAreaElement>("textarea")?.focus()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
+
+  const submit = (value = input) => {
+    if (!value.trim()) return
+    setInput("")
+    send(value)
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col px-4 py-6">
+      {!messages.length ? <EmptyState onExample={submit} /> : null}
+      <div className="flex-1 space-y-6 pb-28">
+        {messages.map((message) => (
+          <motion.article
+            key={message.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={message.role === "user" ? "flex justify-end" : "flex justify-start"}
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <div
+              className={
+                message.role === "user"
+                  ? "max-w-[70%] rounded-lg bg-primary px-4 py-3 text-sm text-primary-foreground"
+                  : "w-full rounded-lg border bg-card p-4"
+              }
+            >
+              {message.role === "user" ? (
+                message.content
+              ) : (
+                <div>
+                  {message.response && !message.response.grounded ? (
+                    <div className="mb-3 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="size-4" />
+                      This answer may not be fully supported by the source docs
+                    </div>
+                  ) : null}
+                  {message.content ? (
+                    <AnswerRenderer
+                      content={message.content}
+                      citations={message.response?.citations ?? []}
+                      onCitationClick={setCitation}
+                    />
+                  ) : (
+                    <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+                  )}
+                  {message.response ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">{message.response.query_type}</Badge>
+                      <Badge variant="secondary">{message.response.retries_used} retries</Badge>
+                      <Badge variant={message.response.grounded ? "secondary" : "destructive"}>
+                        {message.response.grounded ? "grounded" : "ungrounded"}
+                      </Badge>
+                    </div>
+                  ) : null}
+                  {message.trace ? (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-medium">Trace</summary>
+                      <div className="mt-3">
+                        <TraceTimeline steps={message.trace.trace_steps} />
+                      </div>
+                    </details>
+                  ) : null}
+                  {message.response ? <FeedbackButtons traceId={message.response.trace_id} /> : null}
+                </div>
+              )}
+            </div>
+          </motion.article>
+        ))}
+      </div>
+      <div className="fixed inset-x-0 bottom-0 border-t bg-background/90 p-4 backdrop-blur">
+        <div className="mx-auto max-w-3xl">
+          <ChatInput value={input} onChange={setInput} onSubmit={() => submit()} disabled={isLoading} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org -&gt;
-        </a>
-      </footer>
+      </div>
+      <CitationDrawer citation={citation} open={Boolean(citation)} onOpenChange={(open) => !open && setCitation(null)} />
     </div>
-  );
+  )
 }

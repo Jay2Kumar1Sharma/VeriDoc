@@ -46,7 +46,7 @@ async def _query_sse(
         yield f": node {step.get('node')} {step.get('duration_ms')}ms\n\n"
     for token in response.answer.split(" "):
         yield f"data: {json.dumps({'token': token + ' '})}\n\n"
-    yield f"data: {json.dumps({'done': True, 'trace_id': response.trace_id})}\n\n"
+    yield f"data: {json.dumps({'done': True, 'response': response.model_dump(mode='json')})}\n\n"
 
 
 async def _run_query(
