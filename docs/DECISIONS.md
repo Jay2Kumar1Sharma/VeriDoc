@@ -67,3 +67,19 @@ Default to `sentence-transformers` with `BAAI/bge-small-en-v1.5`, while keeping 
 **Consequences**
 
 First-run ingestion may download the model into the local Hugging Face cache, but subsequent runs work from cache. OpenAI embeddings remain available by changing `.env` configuration.
+
+### ADR-004: Gemini as the configured Phase 3 LLM provider
+
+**Status:** Accepted
+
+**Context**
+
+The original assignment listed Anthropic as the primary LLM provider with OpenAI as an alternative. The implementation request for Phase 3 changed the target LLM to Gemini Flash-Lite.
+
+**Decision**
+
+Add a Gemini provider using the official `google-genai` SDK and make `LLM_PROVIDER=gemini` the default. The model ID remains environment-driven through `GENERATION_MODEL` and `GRADING_MODEL`. The checked-in example uses the currently documented Flash-Lite model code, while allowing a newer `gemini-3.1-flash-lite` value if enabled for the user's API key.
+
+**Consequences**
+
+This adds a third LLM provider while keeping the provider interface stable. The Google SDK requires `httpx>=0.28.1`, so the backend `httpx` pin was widened from the original `<0.28` constraint.

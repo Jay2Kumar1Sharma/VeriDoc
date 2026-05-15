@@ -19,11 +19,15 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
     tavily_api_key: str | None = Field(default=None, alias="TAVILY_API_KEY")
 
-    llm_provider: Literal["anthropic", "openai"] = Field(default="anthropic", alias="LLM_PROVIDER")
-    generation_model: str = Field(default="claude-3-5-sonnet-latest", alias="GENERATION_MODEL")
-    grading_model: str = Field(default="claude-3-5-haiku-latest", alias="GRADING_MODEL")
+    llm_provider: Literal["anthropic", "openai", "gemini"] = Field(
+        default="gemini",
+        alias="LLM_PROVIDER",
+    )
+    generation_model: str = Field(default="gemini-2.5-flash-lite", alias="GENERATION_MODEL")
+    grading_model: str = Field(default="gemini-2.5-flash-lite", alias="GRADING_MODEL")
 
     embedding_provider: Literal["openai", "sentence-transformers"] = Field(
         default="sentence-transformers",
@@ -55,4 +59,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

@@ -11,7 +11,7 @@ cd backend
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env  # Fill in ANTHROPIC_API_KEY
+cp .env.example .env  # Fill in GEMINI_API_KEY
 python scripts/ingest_corpus.py
 uvicorn app.main:app --reload
 ```
@@ -83,4 +83,3 @@ rag-docs-assistant/
 - [Architecture](docs/ARCHITECTURE.md)
 - [Decisions](docs/DECISIONS.md)
 - [API Reference](docs/API.md)
-
