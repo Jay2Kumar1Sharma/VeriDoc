@@ -157,6 +157,22 @@ class MetadataStore:
             return None
         return _document_record_from_row(row)
 
+    async def get_document(self, doc_id: str) -> DocumentRecord | None:
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """
+                SELECT doc_id, source, title, ingested_at, chunk_count, status
+                FROM documents
+                WHERE doc_id = ?
+                """,
+                (doc_id,),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+        if row is None:
+            return None
+        return _document_record_from_row(row)
+
     async def list_documents(
         self,
         limit: int = 100,

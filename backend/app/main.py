@@ -2,10 +2,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api import documents, feedback, health, ingest, query, traces
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger, trace_id_var
 from app.stores.metadata_store import MetadataStore
@@ -34,6 +36,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.ingest_jobs = {}
 
     app.add_middleware(
         CORSMiddleware,
@@ -67,16 +70,47 @@ def create_app() -> FastAPI:
         finally:
             trace_id_var.reset(token)
 
-    @app.get("/health", tags=["health"])
-    async def health() -> dict[str, str]:
-        return {
-            "status": "ok",
-            "version": settings.app_version,
-            "env": settings.env,
-        }
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
+        trace_id = trace_id_var.get()
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "type": "about:blank",
+                "title": "HTTP Error",
+                "status": exc.status_code,
+                "detail": exc.detail,
+                "trace_id": trace_id,
+            },
+            headers={"X-Trace-Id": trace_id or ""},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        _request: Request,
+        exc: RequestValidationError,
+    ) -> JSONResponse:
+        trace_id = trace_id_var.get()
+        return JSONResponse(
+            status_code=422,
+            content={
+                "type": "about:blank",
+                "title": "Validation Error",
+                "status": 422,
+                "detail": exc.errors(),
+                "trace_id": trace_id,
+            },
+            headers={"X-Trace-Id": trace_id or ""},
+        )
+
+    app.include_router(health.router)
+    app.include_router(query.router)
+    app.include_router(ingest.router)
+    app.include_router(documents.router)
+    app.include_router(feedback.router)
+    app.include_router(traces.router)
 
     return app
 
 
 app = create_app()
-
