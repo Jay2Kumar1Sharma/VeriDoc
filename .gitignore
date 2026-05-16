@@ -22,6 +22,4 @@ coverage.xml
 .coverage
 htmlcov/
 eval-results/
-!eval-results/
-!eval-results/REPORT.md
 corpus/uploads/
