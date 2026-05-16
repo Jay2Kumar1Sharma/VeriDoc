@@ -18,9 +18,10 @@ import type { ChatMessage, Citation } from "@/lib/types"
 
 export default function Home() {
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
+  const [historySessionId, setHistorySessionId] = useState<string | null>(null)
   const { messages, send, isLoading, loadHistory, clear } = useChat(sessionId)
   const sessions = useSessions()
-  const history = useSessionMessages(sessionId)
+  const history = useSessionMessages(historySessionId)
   const [input, setInput] = useState("")
   const [citation, setCitation] = useState<Citation | null>(null)
 
@@ -47,7 +48,13 @@ export default function Home() {
 
   const newChat = () => {
     setSessionId(crypto.randomUUID())
+    setHistorySessionId(null)
     clear()
+  }
+
+  const loadSession = (selectedSessionId: string) => {
+    setSessionId(selectedSessionId)
+    setHistorySessionId(selectedSessionId)
   }
 
   const submit = (value = input) => {
@@ -68,7 +75,7 @@ export default function Home() {
             <button
               key={session.session_id}
               type="button"
-              onClick={() => setSessionId(session.session_id)}
+              onClick={() => loadSession(session.session_id)}
               className={`w-full rounded-md px-3 py-2 text-left text-sm transition hover:bg-muted ${
                 session.session_id === sessionId ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}

@@ -26,6 +26,12 @@ def configure_logging(log_level: str) -> None:
         stream=sys.stdout,
         level=log_level.upper(),
     )
+    for noisy_logger in [
+        "chromadb.telemetry",
+        "chromadb.telemetry.product",
+        "chromadb.telemetry.product.posthog",
+    ]:
+        logging.getLogger(noisy_logger).disabled = True
     structlog.configure(
         processors=[
             add_trace_id,

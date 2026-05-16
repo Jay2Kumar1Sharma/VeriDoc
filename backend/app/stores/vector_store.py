@@ -33,7 +33,7 @@ class ChromaVectorStore:
         settings: Settings | None = None,
     ) -> None:
         resolved_settings = settings or get_settings()
-        os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+        os.environ["ANONYMIZED_TELEMETRY"] = "False"
         chromadb = import_module("chromadb")
         chroma_config = import_module("chromadb.config")
         self._client = chromadb.PersistentClient(

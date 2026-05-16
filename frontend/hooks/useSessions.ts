@@ -12,10 +12,10 @@ export function useSessions() {
   })
 }
 
-export function useSessionMessages(sessionId: string | null) {
+export function useSessionMessages(sessionId: string | null, enabled = Boolean(sessionId)) {
   return useQuery({
     queryKey: ["sessions", sessionId, "messages"],
     queryFn: () => listSessionMessages(sessionId ?? ""),
-    enabled: Boolean(sessionId),
+    enabled,
   })
 }
