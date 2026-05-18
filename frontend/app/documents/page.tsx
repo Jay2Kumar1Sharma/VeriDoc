@@ -13,7 +13,7 @@ export default function DocumentsPage() {
   const [filter, setFilter] = useState("")
   const { documents, remove } = useDocuments()
 
-  const allDocs = useMemo(() => documents.data?.documents ?? [], [documents.data?.documents])
+  const allDocs = documents.data?.documents ?? []
   const filtered = useMemo(
     () =>
       allDocs.filter((document) =>
@@ -96,7 +96,7 @@ export default function DocumentsPage() {
             {filter ? "No documents match your search" : "No documents indexed yet"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {filter ? "Try a different search term" : 'Click "Ingest new" to add your first document'}
+            {filter ? "Try a different search term" : "Click “Ingest new” to add your first document"}
           </p>
         </div>
       ) : (

@@ -37,35 +37,17 @@ export default function RootLayout({
         <Providers>
           <div className="flex min-h-screen flex-col">
 
-            {/* ── Vivid gradient canvas (the "colour" behind glass) ─────────── */}
+            {/* ── Gradient canvas ───────────────────────────────────────────── */}
             <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-              {/* Indigo / primary — top-left */}
-              <div className="absolute -left-48 -top-48 size-[750px] rounded-full
-                              bg-primary/25 blur-[140px]
-                              dark:bg-primary/55" />
-              {/* Violet — bottom-right */}
-              <div className="absolute -bottom-48 -right-48 size-[650px] rounded-full
-                              bg-violet-500/20 blur-[120px]
-                              dark:bg-violet-500/45" />
-              {/* Sky — centre-right */}
-              <div className="absolute right-[8%] top-[38%] size-[520px] rounded-full
-                              -translate-y-1/2 rounded-full
-                              bg-sky-400/15 blur-[100px]
-                              dark:bg-sky-400/30" />
-              {/* Fuchsia — bottom-left accent */}
-              <div className="absolute bottom-[15%] left-[5%] size-[380px] rounded-full
-                              bg-fuchsia-500/10 blur-[90px]
-                              dark:bg-fuchsia-500/25" />
+              <div className="absolute -left-48 -top-48 size-[750px] rounded-full bg-primary/25 blur-[140px] dark:bg-primary/55" />
+              <div className="absolute -bottom-48 -right-48 size-[650px] rounded-full bg-violet-500/20 blur-[120px] dark:bg-violet-500/45" />
+              <div className="absolute right-[8%] top-[38%] size-[520px] -translate-y-1/2 rounded-full bg-sky-400/15 blur-[100px] dark:bg-sky-400/30" />
+              <div className="absolute bottom-[15%] left-[5%] size-[380px] rounded-full bg-fuchsia-500/10 blur-[90px] dark:bg-fuchsia-500/25" />
             </div>
 
             {/* ── Header ───────────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-40 border-b
-                               border-white/50 dark:border-white/[0.07]
-                               bg-white/50 dark:bg-white/[0.04]
-                               backdrop-blur-xl saturate-150
-                               supports-[backdrop-filter]:bg-white/40
-                               dark:supports-[backdrop-filter]:bg-black/20">
-              <div className="flex h-14 w-full items-center justify-between px-4">
+            <header className="sticky top-0 z-40 h-14 border-b border-white/50 dark:border-white/[0.07] bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl saturate-150">
+              <div className="flex h-full w-full items-center justify-between px-4">
                 <div className="flex items-center gap-6">
                   <Link href="/" className="flex items-center gap-2.5">
                     <div className="flex size-7 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/40">

@@ -17,7 +17,8 @@ import { useSessionMessages, useSessions } from "@/hooks/useSessions"
 import type { ChatMessage, Citation } from "@/lib/types"
 
 export default function Home() {
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
+  const [sessionId, setSessionId] = useState("")
+  useEffect(() => { setSessionId((id) => id || crypto.randomUUID()) }, [])
   const [historySessionId, setHistorySessionId] = useState<string | null>(null)
   const { messages, send, isLoading, loadHistory, clear } = useChat(sessionId)
   const sessions = useSessions()
@@ -69,24 +70,17 @@ export default function Home() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
 
-      {/* ── Sidebar ────────────────────────────────────────────────────── */}
-      {/* overflow-hidden + transition-[width] lets it slide in/out cleanly */}
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside
-        className={`
-          hidden lg:flex shrink-0 flex-col
-          overflow-hidden
-          transition-[width] duration-300 ease-in-out
-          border-r border-white/50 dark:border-white/[0.07]
-          bg-white/35 dark:bg-white/[0.03]
-          backdrop-blur-xl
-          ${sidebarOpen ? "w-[220px]" : "w-0 border-r-0"}
-        `}
+        style={{ width: sidebarOpen ? 220 : 0, transition: "width 300ms ease-in-out" }}
+        className="hidden lg:flex shrink-0 flex-col overflow-hidden border-r border-white/50 dark:border-white/[0.07] bg-white/35 dark:bg-white/[0.03] backdrop-blur-xl"
       >
-        {/* Inner wrapper keeps content at fixed width during animation */}
+        {/* Fixed-width inner wrapper so content doesn't squish during animation */}
         <div className="flex h-full w-[220px] flex-col">
+
           {/* Sidebar header */}
-          <div className="shrink-0 border-b border-white/40 dark:border-white/[0.06] p-3 space-y-2">
-            {/* Row 1: close button, right-aligned */}
+          <div className="shrink-0 space-y-2 border-b border-white/40 dark:border-white/[0.06] p-3">
+            {/* Row 1: collapse button, right-aligned */}
             <div className="flex justify-end">
               <Button
                 size="icon-sm"
@@ -109,12 +103,12 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Session list — starts cleanly below the header */}
-          <div className="relative flex-1 overflow-hidden">
+          {/* Session list — scrolls independently */}
+          <div className="relative min-h-0 flex-1">
             {sessionList.length > 0 && (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-background/60 to-transparent" />
             )}
-            <div className="h-full overflow-y-auto px-2 pt-2 pb-8">
+            <div className="h-full overflow-y-auto px-2 pb-8 pt-2">
               {sessionList.length > 0 && (
                 <p className="mb-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                   Recent
@@ -147,27 +141,27 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* ── Main content ───────────────────────────────────────────────── */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* ── Main panel ───────────────────────────────────────────────────── */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
-        {/* Scrollable messages area */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Expand-sidebar button — only when sidebar is hidden, desktop only */}
+        {!sidebarOpen && (
+          <div className="shrink-0 hidden lg:flex px-3 pt-3">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label="Show sidebar"
+              onClick={() => setSidebarOpen(true)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeft className="size-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Messages — the only scrolling region */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-4 py-4 md:px-8">
-
-            {/* Open-sidebar button — only visible on desktop when sidebar is closed */}
-            {!sidebarOpen && (
-              <div className="mb-4 hidden lg:flex">
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Show sidebar"
-                  onClick={() => setSidebarOpen(true)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <PanelLeft className="size-4" />
-                </Button>
-              </div>
-            )}
 
             {!messages.length ? <EmptyState onExample={submit} /> : null}
 
@@ -273,11 +267,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Input bar — pinned at bottom of the flex column ───────── */}
-        <div className="shrink-0 border-t
-                        border-white/50 dark:border-white/[0.07]
-                        bg-white/50 dark:bg-black/30
-                        px-4 py-4 backdrop-blur-xl">
+        {/* Input bar — always pinned at the bottom */}
+        <div className="shrink-0 border-t border-white/50 dark:border-white/[0.07] bg-white/50 dark:bg-black/30 px-4 py-4 backdrop-blur-xl">
           <div className="mx-auto max-w-2xl">
             <ChatInput
               value={input}

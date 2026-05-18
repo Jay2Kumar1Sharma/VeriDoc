@@ -18,7 +18,7 @@ const examples = [
 
 export function EmptyState({ onExample }: { onExample: (query: string) => void }) {
   return (
-    <section className="relative mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center">
+    <section className="mx-auto flex max-w-xl flex-col items-center py-16 text-center">
       {/* Logo mark */}
       <div className="mb-7 flex size-[4.5rem] items-center justify-center rounded-[1.4rem]
                       border border-white/60 dark:border-white/[0.12]
