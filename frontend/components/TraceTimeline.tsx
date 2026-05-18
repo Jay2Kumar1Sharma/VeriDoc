@@ -28,26 +28,40 @@ const icons = {
 
 export function TraceTimeline({ steps }: { steps: TraceStep[] }) {
   return (
-    <div className="space-y-3" data-testid="trace-timeline">
-      {steps.map((step, index) => {
-        const Icon = icons[step.node as keyof typeof icons] ?? AlertTriangle
-        return (
-          <details key={`${step.node}-${index}`} className="group rounded-lg border bg-card p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
-                  <Icon className="size-4" />
-                </span>
-                <span className="truncate text-sm font-medium">{label(step.node)}</span>
-              </span>
-              <Badge variant="secondary">{step.duration_ms ?? 0}ms</Badge>
-            </summary>
-            <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-muted/50 p-3 text-xs leading-5">
-              {JSON.stringify(step.output ?? {}, null, 2)}
-            </pre>
-          </details>
-        )
-      })}
+    <div className="relative ml-0.5 pl-3" data-testid="trace-timeline">
+      {/* Vertical connecting line */}
+      {steps.length > 1 && (
+        <div className="absolute left-3.5 top-3.5 bottom-3.5 w-px bg-border" />
+      )}
+
+      <div className="space-y-2">
+        {steps.map((step, index) => {
+          const Icon = icons[step.node as keyof typeof icons] ?? AlertTriangle
+          return (
+            <div key={`${step.node}-${index}`} className="relative flex gap-3">
+              {/* Circular node icon */}
+              <div className="relative z-10 mt-2.5 flex size-7 shrink-0 items-center justify-center rounded-full border bg-card shadow-sm">
+                <Icon className="size-3.5 text-primary" />
+              </div>
+
+              {/* Step content */}
+              <details className="flex-1 overflow-hidden rounded-lg border bg-card/60 pb-0 text-xs backdrop-blur-sm">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 hover:bg-muted/40 transition-colors">
+                  <span className="font-medium text-foreground/80">{label(step.node)}</span>
+                  <Badge variant="secondary" className="shrink-0 text-[10px]">
+                    {step.duration_ms ?? 0}ms
+                  </Badge>
+                </summary>
+                <div className="border-t">
+                  <pre className="max-h-52 overflow-auto bg-muted/30 p-3 text-[11px] leading-5">
+                    {JSON.stringify(step.output ?? {}, null, 2)}
+                  </pre>
+                </div>
+              </details>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
